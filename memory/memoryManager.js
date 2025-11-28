@@ -1,4 +1,3 @@
-// Memory manager using Replit DB if available, fallback to file
 const fs = require('fs');
 const path = require('path');
 let useReplitDB = false;
@@ -28,10 +27,10 @@ function saveToFile() {
 async function getUserKey(userId) {
   if (useReplitDB) {
     const val = await db.get(`user_${userId}`);
-    return val || { profile: {}, short: [], meta: {} };
+    return val || { profile: {}, conversations: [], knowledge: [], meta: {} };
   } else {
     await loadFromFile();
-    return store[userId] || { profile: {}, short: [], meta: {} };
+    return store[userId] || { profile: {}, conversations: [], knowledge: [], meta: {} };
   }
 }
 
@@ -46,20 +45,121 @@ async function setUserKey(userId, obj) {
 
 async function getUserMemory(userId) { return await getUserKey(userId); }
 async function setUserMemory(userId, data) { await setUserKey(userId, data); }
-async function clearUserMemory(userId) { if (useReplitDB) { await db.delete(`user_${userId}`); } else { delete store[userId]; saveToFile(); } }
+async function clearUserMemory(userId) { 
+  if (useReplitDB) { 
+    await db.delete(`user_${userId}`); 
+  } else { 
+    delete store[userId]; 
+    saveToFile(); 
+  } 
+}
 
-async function getUserProfile(userId) { const u = await getUserKey(userId); return u.profile || {}; }
-async function updateUserProfile(userId, obj) { const u = await getUserKey(userId); u.profile = Object.assign(u.profile||{}, obj); await setUserKey(userId, u); }
+async function getUserProfile(userId) { 
+  const u = await getUserKey(userId); 
+  return u.profile || {}; 
+}
 
-async function getShortMemory(userId, n=8) { const u = await getUserKey(userId); const arr = u.short||[]; return arr.slice(-n); }
-async function pushToShortMemory(userId, entry) { const u = await getUserKey(userId); u.short = u.short || []; u.short.push(entry); if (u.short.length > 80) u.short = u.short.slice(-80); await setUserKey(userId, u); }
+async function updateUserProfile(userId, obj) { 
+  const u = await getUserKey(userId); 
+  u.profile = Object.assign(u.profile||{}, obj); 
+  await setUserKey(userId, u); 
+}
 
-async function getUserMeta(userId) { const u = await getUserKey(userId); return u.meta || {}; }
-async function setUserMeta(userId, meta) { const u = await getUserKey(userId); u.meta = Object.assign(u.meta||{}, meta); await setUserKey(userId, u); }
+async function getConversationHistory(userId, limit = 10) {
+  const u = await getUserKey(userId);
+  const conversations = u.conversations || [];
+  return conversations.slice(-limit);
+}
+
+async function addConversation(userId, userMessage, aiResponse) {
+  const u = await getUserKey(userId);
+  u.conversations = u.conversations || [];
+  u.conversations.push({
+    timestamp: Date.now(),
+    user: userMessage,
+    ai: aiResponse
+  });
+  if (u.conversations.length > 100) {
+    u.conversations = u.conversations.slice(-100);
+  }
+  await setUserKey(userId, u);
+}
+
+async function getKnowledge(userId) {
+  const u = await getUserKey(userId);
+  return u.knowledge || [];
+}
+
+async function addKnowledge(userId, fact) {
+  const u = await getUserKey(userId);
+  u.knowledge = u.knowledge || [];
+  const exists = u.knowledge.some(k => k.fact.toLowerCase() === fact.toLowerCase());
+  if (!exists) {
+    u.knowledge.push({
+      fact: fact,
+      addedAt: Date.now()
+    });
+    if (u.knowledge.length > 50) {
+      u.knowledge = u.knowledge.slice(-50);
+    }
+    await setUserKey(userId, u);
+  }
+}
+
+async function removeKnowledge(userId, factToRemove) {
+  const u = await getUserKey(userId);
+  u.knowledge = (u.knowledge || []).filter(k => 
+    !k.fact.toLowerCase().includes(factToRemove.toLowerCase())
+  );
+  await setUserKey(userId, u);
+}
+
+async function getUserMeta(userId) { 
+  const u = await getUserKey(userId); 
+  return u.meta || {}; 
+}
+
+async function setUserMeta(userId, meta) { 
+  const u = await getUserKey(userId); 
+  u.meta = Object.assign(u.meta||{}, meta); 
+  await setUserKey(userId, u); 
+}
+
+function buildContextPrompt(conversationHistory, knowledge, userProfile) {
+  let context = '';
+  
+  if (knowledge && knowledge.length > 0) {
+    context += 'IMPORTANT FACTS ABOUT THIS USER:\n';
+    knowledge.forEach(k => {
+      context += `- ${k.fact}\n`;
+    });
+    context += '\n';
+  }
+  
+  if (userProfile && Object.keys(userProfile).length > 0) {
+    context += 'USER PROFILE:\n';
+    for (const [key, value] of Object.entries(userProfile)) {
+      context += `- ${key}: ${value}\n`;
+    }
+    context += '\n';
+  }
+  
+  if (conversationHistory && conversationHistory.length > 0) {
+    context += 'RECENT CONVERSATION HISTORY:\n';
+    conversationHistory.forEach(conv => {
+      context += `User: ${conv.user}\n`;
+      context += `You: ${conv.ai}\n\n`;
+    });
+  }
+  
+  return context;
+}
 
 module.exports = {
   getUserMemory, setUserMemory, clearUserMemory,
   getUserProfile, updateUserProfile,
-  getShortMemory, pushToShortMemory,
-  getUserMeta, setUserMeta
+  getConversationHistory, addConversation,
+  getKnowledge, addKnowledge, removeKnowledge,
+  getUserMeta, setUserMeta,
+  buildContextPrompt
 };
