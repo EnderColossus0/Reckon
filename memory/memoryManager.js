@@ -1,224 +1,198 @@
 const fs = require('fs');
 const path = require('path');
-let useReplitDB = false;
+
 let db = null;
+let useReplitDB = false;
 
 try {
-  const ReplitDB = require('@replit/database');
-  db = new ReplitDB();
+  const Database = require('@replit/database');
+  db = new Database();
   useReplitDB = true;
-  console.log('[Memory] Using Replit Database for storage');
+  console.log('[Memory] Using Replit Database');
 } catch (e) {
-  useReplitDB = false;
-  console.log('[Memory] Replit DB not available, using file storage');
+  console.log('[Memory] Using local file storage');
 }
 
-const FILE = path.join(__dirname, '..', 'ai_memory.json');
-let store = {};
+const LOCAL_FILE = path.join(__dirname, '..', 'memory_store.json');
+let localStore = {};
 
-async function loadFromFile() {
-  if (fs.existsSync(FILE)) {
-    try { store = JSON.parse(fs.readFileSync(FILE)); } catch(e){ store = {}; }
+function loadLocal() {
+  if (fs.existsSync(LOCAL_FILE)) {
+    try {
+      localStore = JSON.parse(fs.readFileSync(LOCAL_FILE, 'utf8'));
+    } catch (e) {
+      localStore = {};
+    }
   }
 }
 
-function saveToFile() {
-  fs.writeFileSync(FILE, JSON.stringify(store, null, 2));
+function saveLocal() {
+  fs.writeFileSync(LOCAL_FILE, JSON.stringify(localStore, null, 2));
 }
 
-async function getUserKey(userId) {
-  const defaultData = { profile: {}, conversations: [], knowledge: [], meta: {} };
+async function getUser(userId) {
+  const key = `user_${userId}`;
+  const empty = {
+    facts: [],
+    history: [],
+    createdAt: Date.now()
+  };
+
+  if (useReplitDB) {
+    try {
+      const data = await db.get(key);
+      if (!data) return empty;
+      return {
+        facts: data.facts || [],
+        history: data.history || [],
+        createdAt: data.createdAt || Date.now()
+      };
+    } catch (err) {
+      console.error('[Memory] Read error:', err.message);
+      return empty;
+    }
+  } else {
+    loadLocal();
+    return localStore[key] || empty;
+  }
+}
+
+async function saveUser(userId, data) {
+  const key = `user_${userId}`;
   
   if (useReplitDB) {
     try {
-      const val = await db.get(`user_${userId}`);
-      console.log(`[DB Read] user_${userId}: ${val ? 'found' : 'not found'}`);
-      if (val) {
-        console.log(`[DB Raw Data] Keys: ${Object.keys(val).join(', ')}`);
-        console.log(`[DB Raw Data] conversations: ${val.conversations?.length || 'none'}, knowledge: ${val.knowledge?.length || 'none'}, short: ${val.short?.length || 'none'}`);
-      }
-      
-      if (!val) return defaultData;
-      
-      // Migrate old format (short) to new format (conversations)
-      if (val.short && !val.conversations) {
-        console.log(`[DB Migration] Converting old format for user_${userId}`);
-        val.conversations = val.short.map(entry => {
-          if (typeof entry === 'string') {
-            return { timestamp: Date.now(), user: entry, ai: '' };
-          }
-          return entry;
-        });
-        delete val.short;
-      }
-      
-      // Ensure all required fields exist
-      val.profile = val.profile || {};
-      val.conversations = val.conversations || [];
-      val.knowledge = val.knowledge || [];
-      val.meta = val.meta || {};
-      
-      return val;
+      await db.set(key, data);
     } catch (err) {
-      console.error(`[DB Read Error] ${err.message}`);
-      return defaultData;
+      console.error('[Memory] Write error:', err.message);
     }
   } else {
-    await loadFromFile();
-    const val = store[userId];
-    if (!val) return defaultData;
-    
-    // Same migration for file storage
-    if (val.short && !val.conversations) {
-      val.conversations = val.short.map(entry => {
-        if (typeof entry === 'string') {
-          return { timestamp: Date.now(), user: entry, ai: '' };
-        }
-        return entry;
-      });
-      delete val.short;
-    }
-    
-    val.profile = val.profile || {};
-    val.conversations = val.conversations || [];
-    val.knowledge = val.knowledge || [];
-    val.meta = val.meta || {};
-    
-    return val;
+    localStore[key] = data;
+    saveLocal();
   }
 }
 
-async function setUserKey(userId, obj) {
-  if (useReplitDB) {
-    try {
-      await db.set(`user_${userId}`, obj);
-      console.log(`[DB Write] user_${userId}: saved (${obj.conversations?.length || 0} convos, ${obj.knowledge?.length || 0} facts)`);
-    } catch (err) {
-      console.error(`[DB Write Error] ${err.message}`);
-    }
-  } else {
-    store[userId] = obj;
-    saveToFile();
-  }
-}
-
-async function getUserMemory(userId) { return await getUserKey(userId); }
-async function setUserMemory(userId, data) { await setUserKey(userId, data); }
-async function clearUserMemory(userId) { 
-  if (useReplitDB) { 
-    await db.delete(`user_${userId}`); 
-  } else { 
-    delete store[userId]; 
-    saveToFile(); 
-  } 
-}
-
-async function getUserProfile(userId) { 
-  const u = await getUserKey(userId); 
-  return u.profile || {}; 
-}
-
-async function updateUserProfile(userId, obj) { 
-  const u = await getUserKey(userId); 
-  u.profile = Object.assign(u.profile||{}, obj); 
-  await setUserKey(userId, u); 
-}
-
-async function getConversationHistory(userId, limit = 10) {
-  const u = await getUserKey(userId);
-  const conversations = u.conversations || [];
-  return conversations.slice(-limit);
-}
-
-async function addConversation(userId, userMessage, aiResponse) {
-  const u = await getUserKey(userId);
-  u.conversations = u.conversations || [];
-  u.conversations.push({
-    timestamp: Date.now(),
-    user: userMessage,
-    ai: aiResponse
+async function addFact(userId, fact) {
+  const user = await getUser(userId);
+  const normalizedFact = fact.trim().toLowerCase();
+  
+  const exists = user.facts.some(f => f.text.toLowerCase() === normalizedFact);
+  if (exists) return false;
+  
+  user.facts.push({
+    text: fact.trim(),
+    addedAt: Date.now()
   });
-  if (u.conversations.length > 100) {
-    u.conversations = u.conversations.slice(-100);
+  
+  if (user.facts.length > 30) {
+    user.facts = user.facts.slice(-30);
   }
-  await setUserKey(userId, u);
+  
+  await saveUser(userId, user);
+  console.log(`[Memory] Saved fact for ${userId}: "${fact}"`);
+  return true;
 }
 
-async function getKnowledge(userId) {
-  const u = await getUserKey(userId);
-  return u.knowledge || [];
+async function getFacts(userId) {
+  const user = await getUser(userId);
+  return user.facts;
 }
 
-async function addKnowledge(userId, fact) {
-  const u = await getUserKey(userId);
-  u.knowledge = u.knowledge || [];
-  const exists = u.knowledge.some(k => k.fact.toLowerCase() === fact.toLowerCase());
-  if (!exists) {
-    u.knowledge.push({
-      fact: fact,
-      addedAt: Date.now()
-    });
-    if (u.knowledge.length > 50) {
-      u.knowledge = u.knowledge.slice(-50);
+async function addToHistory(userId, userMsg, botReply) {
+  const user = await getUser(userId);
+  
+  user.history.push({
+    user: userMsg.slice(0, 500),
+    bot: botReply.slice(0, 1000),
+    time: Date.now()
+  });
+  
+  if (user.history.length > 50) {
+    user.history = user.history.slice(-50);
+  }
+  
+  await saveUser(userId, user);
+}
+
+async function getHistory(userId, limit = 6) {
+  const user = await getUser(userId);
+  return user.history.slice(-limit);
+}
+
+async function clearUser(userId) {
+  const key = `user_${userId}`;
+  
+  if (useReplitDB) {
+    try {
+      await db.delete(key);
+    } catch (err) {
+      console.error('[Memory] Delete error:', err.message);
     }
-    await setUserKey(userId, u);
+  } else {
+    delete localStore[key];
+    saveLocal();
   }
 }
 
-async function removeKnowledge(userId, factToRemove) {
-  const u = await getUserKey(userId);
-  u.knowledge = (u.knowledge || []).filter(k => 
-    !k.fact.toLowerCase().includes(factToRemove.toLowerCase())
-  );
-  await setUserKey(userId, u);
-}
-
-async function getUserMeta(userId) { 
-  const u = await getUserKey(userId); 
-  return u.meta || {}; 
-}
-
-async function setUserMeta(userId, meta) { 
-  const u = await getUserKey(userId); 
-  u.meta = Object.assign(u.meta||{}, meta); 
-  await setUserKey(userId, u); 
-}
-
-function buildContextPrompt(conversationHistory, knowledge, userProfile) {
-  let context = '';
+function buildContext(facts, history) {
+  let ctx = '';
   
-  if (knowledge && knowledge.length > 0) {
-    context += 'IMPORTANT FACTS ABOUT THIS USER:\n';
-    knowledge.forEach(k => {
-      context += `- ${k.fact}\n`;
+  if (facts.length > 0) {
+    ctx += 'THINGS I KNOW ABOUT THIS USER:\n';
+    facts.forEach(f => ctx += `- ${f.text}\n`);
+    ctx += '\n';
+  }
+  
+  if (history.length > 0) {
+    ctx += 'OUR RECENT CONVERSATION:\n';
+    history.forEach(h => {
+      ctx += `User: ${h.user}\n`;
+      ctx += `You: ${h.bot}\n\n`;
     });
-    context += '\n';
   }
   
-  if (userProfile && Object.keys(userProfile).length > 0) {
-    context += 'USER PROFILE:\n';
-    for (const [key, value] of Object.entries(userProfile)) {
-      context += `- ${key}: ${value}\n`;
+  return ctx;
+}
+
+async function getGuildConfig(guildId) {
+  const key = `guild_${guildId}`;
+  
+  if (useReplitDB) {
+    try {
+      return await db.get(key) || {};
+    } catch (err) {
+      return {};
     }
-    context += '\n';
+  } else {
+    loadLocal();
+    return localStore[key] || {};
   }
+}
+
+async function setGuildConfig(guildId, config) {
+  const key = `guild_${guildId}`;
+  const current = await getGuildConfig(guildId);
+  const merged = { ...current, ...config };
   
-  if (conversationHistory && conversationHistory.length > 0) {
-    context += 'RECENT CONVERSATION HISTORY:\n';
-    conversationHistory.forEach(conv => {
-      context += `User: ${conv.user}\n`;
-      context += `You: ${conv.ai}\n\n`;
-    });
+  if (useReplitDB) {
+    try {
+      await db.set(key, merged);
+    } catch (err) {
+      console.error('[Memory] Guild config error:', err.message);
+    }
+  } else {
+    localStore[key] = merged;
+    saveLocal();
   }
-  
-  return context;
 }
 
 module.exports = {
-  getUserMemory, setUserMemory, clearUserMemory,
-  getUserProfile, updateUserProfile,
-  getConversationHistory, addConversation,
-  getKnowledge, addKnowledge, removeKnowledge,
-  getUserMeta, setUserMeta,
-  buildContextPrompt
+  addFact,
+  getFacts,
+  addToHistory,
+  getHistory,
+  clearUser,
+  buildContext,
+  getGuildConfig,
+  setGuildConfig
 };

@@ -1,24 +1,17 @@
-const aiHandler = require('../ai/aiHandler');
+const ai = require('../ai/aiHandler');
 
 module.exports = {
-  data: { name: 'setaimodel', description: 'Set your preferred AI model (gemini or groq)' },
+  data: { name: 'setaimodel', description: 'Switch between AI models (gemini or groq)' },
+  
   async execute(message, args) {
-    if (!args[0]) {
-      return message.reply('❌ Please specify a model. Example: -setaimodel gemini');
+    const model = args[0]?.toLowerCase();
+
+    if (!model || !['gemini', 'groq'].includes(model)) {
+      const current = ai.getModel(message.author.id);
+      return message.reply(`Current model: **${current}**\n\nUsage: \`-setaimodel gemini\` or \`-setaimodel groq\``);
     }
 
-    const model = args[0].toLowerCase();
-    if (!['gemini', 'groq'].includes(model)) {
-      return message.reply('❌ Invalid model. Available models: gemini, groq');
-    }
-
-    // Set the model in memory for the user
-    aiHandler.setActiveModelForUser(message.author.id, model);
-
-    // Confirmation message
-    message.reply(`✅ Your AI model has been set to **${model}**`);
-
-    // Optional: log to console for debugging
-    console.log(`User ${message.author.tag} set AI model to ${model}`);
+    ai.setModel(message.author.id, model);
+    message.reply(`Switched to **${model}**!`);
   }
 };

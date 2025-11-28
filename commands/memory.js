@@ -1,41 +1,32 @@
-const aiHandler = require('../ai/aiHandler');
-const memoryManager = require('../memory/memoryManager');
+const ai = require('../ai/aiHandler');
 
 module.exports = {
-  data: { name: 'memory', description: 'View or clear what the AI remembers about you' },
+  data: { name: 'memory', description: 'View or clear what I remember about you' },
+  
   async execute(message, args) {
-    const action = args[0]?.toLowerCase();
     const userId = message.author.id;
+    const action = args[0]?.toLowerCase();
 
     if (action === 'clear') {
-      await aiHandler.clearUserMemory(userId);
-      return message.reply('Your memory has been cleared. I no longer remember our past conversations or facts about you.');
+      await ai.clearMemory(userId);
+      return message.reply('Done! I\'ve forgotten everything about you. We can start fresh.');
     }
 
-    if (action === 'view' || !action) {
-      const knowledge = await memoryManager.getKnowledge(userId);
-      const conversations = await memoryManager.getConversationHistory(userId, 5);
+    const facts = await ai.getKnowledge(userId);
 
-      let response = '**What I Remember About You:**\n\n';
-
-      if (knowledge.length > 0) {
-        response += '**Facts:**\n';
-        knowledge.forEach((k, i) => {
-          response += `${i + 1}. ${k.fact}\n`;
-        });
-      } else {
-        response += '*No facts stored yet.*\n';
-      }
-
-      response += `\n**Recent Conversations:** ${conversations.length} stored\n`;
-
-      if (response.length > 1900) {
-        response = response.slice(0, 1900) + '...';
-      }
-
-      return message.reply(response);
+    if (facts.length === 0) {
+      return message.reply('I don\'t have any saved facts about you yet. Chat with me and I\'ll remember important things!');
     }
 
-    return message.reply('Usage: `-memory` to view, `-memory clear` to clear your memory');
+    let response = '**What I Remember About You:**\n\n';
+    facts.forEach((f, i) => {
+      response += `${i + 1}. ${f.text}\n`;
+    });
+
+    if (response.length > 1900) {
+      response = response.slice(0, 1900) + '...';
+    }
+
+    return message.reply(response);
   }
 };

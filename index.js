@@ -72,16 +72,6 @@ client.on('messageCreate', async message => {
       }
     }
 
-    // --- Built-in AI model switch command ---
-    if (cmdName === 'setaimodel') {
-      const model = args[0]?.toLowerCase();
-      if (!['gemini', 'groq'].includes(model)) {
-        return message.reply('Invalid model. Available: `gemini`, `groq`');
-      }
-      aiHandler.setActiveModelForUser(message.author.id, model);
-      return message.reply(`Your AI model has been set to **${model}**.`);
-    }
-
     return;
   }
 
@@ -90,9 +80,9 @@ client.on('messageCreate', async message => {
     if (await shouldTriggerAi(message)) {
       const userId = message.author.id;
       const guildId = message.guild ? message.guild.id : null;
-      const model = await aiHandler.getActiveModelForUser(userId);
+      const model = aiHandler.getModel(userId);
 
-      const reply = await aiHandler.generateAIResponse(userId, message.content);
+      const reply = await aiHandler.chat(userId, message.content);
 
       const guildCfg = guildId ? await configStore.getGuildConfig(guildId) : null;
       const color = guildCfg?.embedColor || '#ffffff';

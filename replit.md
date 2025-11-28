@@ -28,17 +28,18 @@ Preferred communication style: Simple, everyday language.
 **Dual-storage strategy** for flexibility across deployment environments:
 
 1. **Primary storage**: Replit Database (cloud-based key-value store)
-2. **Fallback storage**: Local JSON files (`config.json`, `ai_memory.json`)
+2. **Fallback storage**: Local JSON file (`memory_store.json`)
 
 **Storage auto-detection**: The system attempts to load `@replit/database` and falls back to file storage if unavailable.
 
-**Memory structure per user**:
-- `profile`: User metadata
-- `conversations`: Historical message exchanges
-- `knowledge`: Extracted facts about users (parsed from AI responses with `[REMEMBER: ...]` markers)
-- `meta`: Additional metadata
+**Memory structure per user** (`user_{userId}`):
+- `facts`: Array of remembered facts about the user (max 30)
+- `history`: Recent conversation history (max 50 exchanges)
+- `createdAt`: Timestamp of first interaction
 
-**Configuration storage**: Guild-specific settings (e.g., designated AI chat channels) are stored separately from user memory.
+**Guild configuration** (`guild_{guildId}`):
+- `aiChannelId`: Designated channel for AI responses
+- `embedColor`: Custom embed color
 
 ### Message Handling Logic
 
