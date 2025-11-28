@@ -27,18 +27,64 @@ function saveToFile() {
 }
 
 async function getUserKey(userId) {
+  const defaultData = { profile: {}, conversations: [], knowledge: [], meta: {} };
+  
   if (useReplitDB) {
     try {
       const val = await db.get(`user_${userId}`);
       console.log(`[DB Read] user_${userId}: ${val ? 'found' : 'not found'}`);
-      return val || { profile: {}, conversations: [], knowledge: [], meta: {} };
+      if (val) {
+        console.log(`[DB Raw Data] Keys: ${Object.keys(val).join(', ')}`);
+        console.log(`[DB Raw Data] conversations: ${val.conversations?.length || 'none'}, knowledge: ${val.knowledge?.length || 'none'}, short: ${val.short?.length || 'none'}`);
+      }
+      
+      if (!val) return defaultData;
+      
+      // Migrate old format (short) to new format (conversations)
+      if (val.short && !val.conversations) {
+        console.log(`[DB Migration] Converting old format for user_${userId}`);
+        val.conversations = val.short.map(entry => {
+          if (typeof entry === 'string') {
+            return { timestamp: Date.now(), user: entry, ai: '' };
+          }
+          return entry;
+        });
+        delete val.short;
+      }
+      
+      // Ensure all required fields exist
+      val.profile = val.profile || {};
+      val.conversations = val.conversations || [];
+      val.knowledge = val.knowledge || [];
+      val.meta = val.meta || {};
+      
+      return val;
     } catch (err) {
       console.error(`[DB Read Error] ${err.message}`);
-      return { profile: {}, conversations: [], knowledge: [], meta: {} };
+      return defaultData;
     }
   } else {
     await loadFromFile();
-    return store[userId] || { profile: {}, conversations: [], knowledge: [], meta: {} };
+    const val = store[userId];
+    if (!val) return defaultData;
+    
+    // Same migration for file storage
+    if (val.short && !val.conversations) {
+      val.conversations = val.short.map(entry => {
+        if (typeof entry === 'string') {
+          return { timestamp: Date.now(), user: entry, ai: '' };
+        }
+        return entry;
+      });
+      delete val.short;
+    }
+    
+    val.profile = val.profile || {};
+    val.conversations = val.conversations || [];
+    val.knowledge = val.knowledge || [];
+    val.meta = val.meta || {};
+    
+    return val;
   }
 }
 
