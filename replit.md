@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Command pattern**: Prefix-based command system (`-` prefix) with dynamic command loading from the `/commands` directory
 
 ### AI Integration
-- **Primary AI Provider**: Google Gemini 1.5 Flash model via REST API
+- **Primary AI Provider**: Google Gemini 2.0 Flash model via REST API
 - **Secondary AI Provider**: Groq with Llama 3.3 70B Versatile model
 - **Context-aware conversations**: System prompt defines bot personality as "Outlaw" - a helpful, friendly assistant that maintains conversation continuity
 - **Memory-augmented prompts**: User context and conversation history are injected into prompts to enable personalized responses

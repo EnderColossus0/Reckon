@@ -21,7 +21,7 @@ const gemini = {
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -131,7 +131,15 @@ module.exports = {
     const knowledge = await memoryManager.getKnowledge(userId);
     const userProfile = await memoryManager.getUserProfile(userId);
     
+    console.log(`[Memory Debug] User ${userId}:`);
+    console.log(`  - Conversations: ${conversationHistory.length}`);
+    console.log(`  - Knowledge facts: ${knowledge.length}`);
+    if (knowledge.length > 0) {
+      console.log(`  - Facts: ${knowledge.map(k => k.fact).join(', ')}`);
+    }
+    
     const context = memoryManager.buildContextPrompt(conversationHistory, knowledge, userProfile);
+    console.log(`[Memory Debug] Context length: ${context.length} chars`);
     
     let response = null;
     let success = false;

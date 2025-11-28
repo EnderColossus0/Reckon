@@ -7,8 +7,10 @@ try {
   const ReplitDB = require('@replit/database');
   db = new ReplitDB();
   useReplitDB = true;
+  console.log('[Memory] Using Replit Database for storage');
 } catch (e) {
   useReplitDB = false;
+  console.log('[Memory] Replit DB not available, using file storage');
 }
 
 const FILE = path.join(__dirname, '..', 'ai_memory.json');
