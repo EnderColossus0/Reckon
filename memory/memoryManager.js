@@ -42,6 +42,7 @@ async function getUser(userId) {
   const empty = {
     facts: [],
     history: [],
+    color: '#ffffff',
     createdAt: Date.now()
   };
 
@@ -60,6 +61,7 @@ async function getUser(userId) {
       return {
         facts: Array.isArray(data.facts) ? data.facts : [],
         history: Array.isArray(data.history) ? data.history : [],
+        color: data.color || '#ffffff',
         createdAt: data.createdAt || Date.now()
       };
     } catch (err) {
@@ -209,6 +211,17 @@ async function setGuildConfig(guildId, config) {
   }
 }
 
+async function getUserColor(userId) {
+  const user = await getUser(userId);
+  return user.color || '#ffffff';
+}
+
+async function setUserColor(userId, color) {
+  const user = await getUser(userId);
+  user.color = color;
+  await saveUser(userId, user);
+}
+
 module.exports = {
   addFact,
   getFacts,
@@ -217,5 +230,7 @@ module.exports = {
   clearUser,
   buildContext,
   getGuildConfig,
-  setGuildConfig
+  setGuildConfig,
+  getUserColor,
+  setUserColor
 };

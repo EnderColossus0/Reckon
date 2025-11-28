@@ -86,8 +86,8 @@ client.on('messageCreate', async message => {
 
       const reply = await aiHandler.chat(userId, message.content);
 
-      const guildCfg = guildId ? await configStore.getGuildConfig(guildId) : null;
-      const color = guildCfg?.embedColor || '#ffffff';
+      const userColor = await aiHandler.getUserColor(userId);
+      const color = userColor || '#ffffff';
 
       const embed = new EmbedBuilder()
         .setTitle('Outlaw')

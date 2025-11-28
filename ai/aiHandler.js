@@ -177,5 +177,9 @@ module.exports = {
 
   async getKnowledge(userId) {
     return await memory.getFacts(userId);
+  },
+
+  async getUserColor(userId) {
+    return await memory.getUserColor(userId);
   }
 };
