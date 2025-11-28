@@ -37,8 +37,10 @@ async function shouldTriggerAi(message) {
   const guildId = message.guild ? message.guild.id : null;
   const cfg = guildId ? await configStore.getGuildConfig(guildId) : null;
 
-  if (cfg && cfg.aiChannelId && message.channel.id !== cfg.aiChannelId) return false;
+  // If in configured AI channel, respond to everything
+  if (cfg && cfg.aiChannelId && message.channel.id === cfg.aiChannelId) return true;
 
+  // Otherwise, check for other triggers
   if (message.mentions.has(client.user)) return true;
 
   if (message.reference && message.reference.messageId) {
