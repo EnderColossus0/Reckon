@@ -1,15 +1,27 @@
 const fetch = require('node-fetch');
 const memory = require('../memory/memoryManager');
 
-const SYSTEM_PROMPT = `You are Outlaw, a helpful and friendly AI assistant in a Discord server. You have memory and remember things about users.
+const SYSTEM_PROMPT = `You are Outlaw, a friendly AI assistant with a great memory. You remember users and build relationships with them over time.
 
-MEMORY INSTRUCTIONS:
-- When a user shares personal info (name, interests, job, preferences), remember it
-- Use what you know about them naturally in conversation
-- To save a new fact, include [REMEMBER: the fact] at the end of your message
-- Only remember important, long-term facts - not temporary things
-- Be conversational, helpful, and reference past chats when relevant
-- Keep responses concise but friendly`;
+YOUR MEMORY ABILITIES:
+- You remember everything users tell you about themselves
+- You naturally reference past conversations
+- You recognize returning users and greet them personally
+
+HOW TO REMEMBER THINGS:
+When a user tells you something important about themselves (name, job, hobbies, preferences, location, pets, family, etc.), you MUST include [REMEMBER: the fact] somewhere in your response.
+
+Examples of when to use [REMEMBER:]:
+- User says "My name is Alex" → Include [REMEMBER: User's name is Alex]
+- User says "I'm a software developer" → Include [REMEMBER: User works as a software developer]
+- User says "I love playing guitar" → Include [REMEMBER: User enjoys playing guitar]
+- User mentions they have a dog named Max → Include [REMEMBER: User has a dog named Max]
+
+IMPORTANT:
+- Always use [REMEMBER: ...] when you learn something new about the user
+- Be friendly and conversational
+- Reference what you already know about them naturally
+- Keep responses helpful and concise`;
 
 const gemini = {
   async chat(prompt, context) {
@@ -17,8 +29,8 @@ const gemini = {
     if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
 
     const fullPrompt = context 
-      ? `${SYSTEM_PROMPT}\n\n${context}\nUser's message: ${prompt}`
-      : `${SYSTEM_PROMPT}\n\nUser: ${prompt}`;
+      ? `${SYSTEM_PROMPT}\n\n${context}\n\nUser's current message: ${prompt}\n\nRemember: If the user shares personal info, include [REMEMBER: fact] in your response.`
+      : `${SYSTEM_PROMPT}\n\nUser: ${prompt}\n\nRemember: If the user shares personal info, include [REMEMBER: fact] in your response.`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -32,6 +44,8 @@ const gemini = {
     );
 
     if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[Gemini] API Error:', res.status, errorText);
       throw new Error(`Gemini API error: ${res.status}`);
     }
 
@@ -59,12 +73,14 @@ const groq = {
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemMsg },
-          { role: 'user', content: prompt }
+          { role: 'user', content: `${prompt}\n\n(Remember: If I share personal info, include [REMEMBER: fact] in your response)` }
         ]
       })
     });
 
     if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[Groq] API Error:', res.status, errorText);
       throw new Error(`Groq API error: ${res.status}`);
     }
 
@@ -121,8 +137,9 @@ module.exports = {
         reply = await groq.chat(message, context);
       }
       success = true;
+      console.log(`[AI] ${model} responded successfully`);
     } catch (err) {
-      console.log(`[AI] ${model} failed, trying fallback...`);
+      console.log(`[AI] ${model} failed: ${err.message}, trying fallback...`);
       try {
         if (model === 'gemini') {
           reply = await groq.chat(message, context);
@@ -130,6 +147,7 @@ module.exports = {
           reply = await gemini.chat(message, context);
         }
         success = true;
+        console.log(`[AI] Fallback succeeded`);
       } catch (fallbackErr) {
         console.error('[AI] Both models failed:', fallbackErr.message);
         return 'Sorry, I had trouble responding. Please try again.';
@@ -138,6 +156,8 @@ module.exports = {
 
     if (success && reply) {
       const newFacts = extractFacts(reply);
+      console.log(`[AI] Extracted ${newFacts.length} facts from response`);
+      
       for (const fact of newFacts) {
         await memory.addFact(userId, fact);
       }

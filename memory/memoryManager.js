@@ -30,6 +30,13 @@ function saveLocal() {
   fs.writeFileSync(LOCAL_FILE, JSON.stringify(localStore, null, 2));
 }
 
+function unwrap(result) {
+  if (result && typeof result === 'object' && result.ok !== undefined) {
+    return result.value;
+  }
+  return result;
+}
+
 async function getUser(userId) {
   const key = `user_${userId}`;
   const empty = {
@@ -40,11 +47,19 @@ async function getUser(userId) {
 
   if (useReplitDB) {
     try {
-      const data = await db.get(key);
-      if (!data) return empty;
+      const raw = await db.get(key);
+      const data = unwrap(raw);
+      
+      if (!data) {
+        console.log(`[Memory] No data found for ${userId}`);
+        return empty;
+      }
+      
+      console.log(`[Memory] Loaded ${userId}: ${data.facts?.length || 0} facts, ${data.history?.length || 0} history`);
+      
       return {
-        facts: data.facts || [],
-        history: data.history || [],
+        facts: Array.isArray(data.facts) ? data.facts : [],
+        history: Array.isArray(data.history) ? data.history : [],
         createdAt: data.createdAt || Date.now()
       };
     } catch (err) {
@@ -63,12 +78,14 @@ async function saveUser(userId, data) {
   if (useReplitDB) {
     try {
       await db.set(key, data);
+      console.log(`[Memory] Saved ${userId}: ${data.facts?.length || 0} facts, ${data.history?.length || 0} history`);
     } catch (err) {
       console.error('[Memory] Write error:', err.message);
     }
   } else {
     localStore[key] = data;
     saveLocal();
+    console.log(`[Memory] Saved ${userId} to file`);
   }
 }
 
@@ -77,7 +94,10 @@ async function addFact(userId, fact) {
   const normalizedFact = fact.trim().toLowerCase();
   
   const exists = user.facts.some(f => f.text.toLowerCase() === normalizedFact);
-  if (exists) return false;
+  if (exists) {
+    console.log(`[Memory] Fact already exists for ${userId}: "${fact}"`);
+    return false;
+  }
   
   user.facts.push({
     text: fact.trim(),
@@ -89,7 +109,7 @@ async function addFact(userId, fact) {
   }
   
   await saveUser(userId, user);
-  console.log(`[Memory] Saved fact for ${userId}: "${fact}"`);
+  console.log(`[Memory] Added new fact for ${userId}: "${fact}"`);
   return true;
 }
 
@@ -112,6 +132,7 @@ async function addToHistory(userId, userMsg, botReply) {
   }
   
   await saveUser(userId, user);
+  console.log(`[Memory] Added conversation to history for ${userId}`);
 }
 
 async function getHistory(userId, limit = 6) {
@@ -125,6 +146,7 @@ async function clearUser(userId) {
   if (useReplitDB) {
     try {
       await db.delete(key);
+      console.log(`[Memory] Cleared all data for ${userId}`);
     } catch (err) {
       console.error('[Memory] Delete error:', err.message);
     }
@@ -159,7 +181,8 @@ async function getGuildConfig(guildId) {
   
   if (useReplitDB) {
     try {
-      return await db.get(key) || {};
+      const raw = await db.get(key);
+      return unwrap(raw) || {};
     } catch (err) {
       return {};
     }
