@@ -28,8 +28,14 @@ function saveToFile() {
 
 async function getUserKey(userId) {
   if (useReplitDB) {
-    const val = await db.get(`user_${userId}`);
-    return val || { profile: {}, conversations: [], knowledge: [], meta: {} };
+    try {
+      const val = await db.get(`user_${userId}`);
+      console.log(`[DB Read] user_${userId}: ${val ? 'found' : 'not found'}`);
+      return val || { profile: {}, conversations: [], knowledge: [], meta: {} };
+    } catch (err) {
+      console.error(`[DB Read Error] ${err.message}`);
+      return { profile: {}, conversations: [], knowledge: [], meta: {} };
+    }
   } else {
     await loadFromFile();
     return store[userId] || { profile: {}, conversations: [], knowledge: [], meta: {} };
@@ -38,7 +44,12 @@ async function getUserKey(userId) {
 
 async function setUserKey(userId, obj) {
   if (useReplitDB) {
-    await db.set(`user_${userId}`, obj);
+    try {
+      await db.set(`user_${userId}`, obj);
+      console.log(`[DB Write] user_${userId}: saved (${obj.conversations?.length || 0} convos, ${obj.knowledge?.length || 0} facts)`);
+    } catch (err) {
+      console.error(`[DB Write Error] ${err.message}`);
+    }
   } else {
     store[userId] = obj;
     saveToFile();
