@@ -239,6 +239,28 @@ async function setUserColor(userId, color) {
   await saveUser(userId, user);
 }
 
+async function getUserEmbedTitle(userId) {
+  const user = await getUser(userId);
+  return user.embedTitle || null;
+}
+
+async function setUserEmbedTitle(userId, title) {
+  const user = await getUser(userId);
+  user.embedTitle = title;
+  await saveUser(userId, user);
+}
+
+async function getUserEmbedFooter(userId) {
+  const user = await getUser(userId);
+  return user.embedFooter || null;
+}
+
+async function setUserEmbedFooter(userId, footer) {
+  const user = await getUser(userId);
+  user.embedFooter = footer;
+  await saveUser(userId, user);
+}
+
 async function getAllUserFacts() {
   const allFacts = [];
   
@@ -283,5 +305,9 @@ module.exports = {
   setGuildConfig,
   getUserColor,
   setUserColor,
+  getUserEmbedTitle,
+  setUserEmbedTitle,
+  getUserEmbedFooter,
+  setUserEmbedFooter,
   getAllUserFacts
 };

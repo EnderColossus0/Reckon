@@ -196,5 +196,13 @@ module.exports = {
 
   async getUserColor(userId) {
     return await memory.getUserColor(userId);
+  },
+
+  async getUserEmbedTitle(userId) {
+    return await memory.getUserEmbedTitle(userId);
+  },
+
+  async getUserEmbedFooter(userId) {
+    return await memory.getUserEmbedFooter(userId);
   }
 };
