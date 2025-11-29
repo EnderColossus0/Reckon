@@ -93,6 +93,8 @@ client.on('messageCreate', async message => {
       const customTitle = await aiHandler.getUserEmbedTitle(userId);
       const customFooter = await aiHandler.getUserEmbedFooter(userId);
 
+      console.log(`[Embed] User ${userId} - Title: "${customTitle}", Footer: "${customFooter}"`);
+
       const embed = new EmbedBuilder()
         .setTitle(customTitle || 'Outlaw')
         .setDescription(reply.length > 3900 ? reply.slice(0, 3900) + '…' : reply)

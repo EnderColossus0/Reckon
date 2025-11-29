@@ -250,7 +250,9 @@ async function getUserEmbedTitle(userId) {
 async function setUserEmbedTitle(userId, title) {
   const user = await getUser(userId);
   user.embedTitle = title;
+  console.log(`[Memory] Setting embed title for ${userId}: "${title}"`);
   await saveUser(userId, user);
+  console.log(`[Memory] Saved embed title for ${userId}`);
 }
 
 async function getUserEmbedFooter(userId) {
@@ -261,7 +263,9 @@ async function getUserEmbedFooter(userId) {
 async function setUserEmbedFooter(userId, footer) {
   const user = await getUser(userId);
   user.embedFooter = footer;
+  console.log(`[Memory] Setting embed footer for ${userId}: "${footer}"`);
   await saveUser(userId, user);
+  console.log(`[Memory] Saved embed footer for ${userId}`);
 }
 
 async function getAllUserFacts() {
