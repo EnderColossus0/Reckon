@@ -138,9 +138,10 @@ module.exports = {
     
     const facts = await memory.getFacts(userId);
     const history = await memory.getHistory(userId, 6);
-    const context = await memory.buildContext(facts, history);
+    const allSharedFacts = await memory.getAllUserFacts();
+    const context = await memory.buildContext(facts, history, allSharedFacts);
     
-    console.log(`[AI] User ${userId} | Model: ${model} | Facts: ${facts.length} | History: ${history.length}`);
+    console.log(`[AI] User ${userId} | Model: ${model} | User Facts: ${facts.length} | Shared Facts: ${allSharedFacts.length} | History: ${history.length}`);
     
     let reply = null;
     let success = false;

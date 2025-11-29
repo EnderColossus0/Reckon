@@ -8,10 +8,10 @@ module.exports = {
 
     if (!model || !['gemini', 'groq'].includes(model)) {
       const current = ai.getModel(message.author.id);
-      return message.reply(`Current model: **${current}**\n\nUsage: \`-setaimodel gemini\` or \`-setaimodel groq\``);
+      return message.reply(`Current model — **${current}**\n\n**How to switch**\n\`-setaimodel gemini\`\nor\n\`-setaimodel groq\``);
     }
 
     ai.setModel(message.author.id, model);
-    message.reply(`Switched to **${model}**!`);
+    message.reply(`Switched to **${model}**.`);
   }
 };

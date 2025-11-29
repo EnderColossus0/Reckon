@@ -28,7 +28,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle('Outlaw Commands')
       .setDescription('List of all available commands.\n**Prefix** — -')
-      .setColor('#00FF00');
+      .setColor('#FFFFFF');
 
     const categoryEmojis = {
       'Configuration': '⚙️',

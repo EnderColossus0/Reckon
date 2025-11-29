@@ -3,6 +3,6 @@ module.exports = {
   async execute(message, args) {
     const sent = await message.reply('Pinging...');
     const latency = sent.createdTimestamp - message.createdTimestamp;
-    sent.edit(`Comrade has a delay of ${latency}ms.`);
+    sent.edit(`Outlaw has a delay of ${latency}ms.`);
   }
 };
