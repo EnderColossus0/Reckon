@@ -170,20 +170,27 @@ async function clearUser(userId) {
   }
 }
 
-async function buildContext(facts, history) {
+async function buildContext(facts, history, sharedFacts = null) {
   let ctx = '';
   
-  const allUserFacts = await getAllUserFacts();
+  // Use provided shared facts or fetch them
+  const allUserFacts = sharedFacts || await getAllUserFacts();
 
   if (allUserFacts && allUserFacts.length > 0) {
     ctx += 'FACTS I KNOW ABOUT USERS (YOU CAN REFERENCE THESE):\n';
-    allUserFacts.forEach(f => ctx += `- ${f.text}\n`);
+    allUserFacts.forEach(f => {
+      const factText = typeof f === 'object' ? f.text : f;
+      ctx += `- ${factText}\n`;
+    });
     ctx += '\n';
   }
   
   if (facts.length > 0) {
     ctx += 'SPECIFIC FACTS ABOUT THIS USER:\n';
-    facts.forEach(f => ctx += `- ${f.text}\n`);
+    facts.forEach(f => {
+      const factText = typeof f === 'object' ? f.text : f;
+      ctx += `- ${factText}\n`;
+    });
     ctx += '\n';
   }
   
@@ -195,6 +202,7 @@ async function buildContext(facts, history) {
     });
   }
   
+  console.log(`[Context] Built context with ${allUserFacts?.length || 0} shared facts, ${facts.length} user facts, ${history.length} history`);
   return ctx;
 }
 
