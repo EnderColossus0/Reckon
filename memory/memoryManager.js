@@ -158,8 +158,17 @@ async function clearUser(userId) {
   }
 }
 
-function buildContext(facts, history) {
+async function buildContext(facts, history) {
   let ctx = '';
+  
+  const sharedData = await getSharedFacts();
+  const shared = sharedData.facts || [];
+
+  if (shared && shared.length > 0) {
+    ctx += 'SHARED KNOWLEDGE (ABOUT ALL USERS):\n';
+    shared.forEach(f => ctx += `- ${f.text}\n`);
+    ctx += '\n';
+  }
   
   if (facts.length > 0) {
     ctx += 'THINGS I KNOW ABOUT THIS USER:\n';
@@ -222,6 +231,59 @@ async function setUserColor(userId, color) {
   await saveUser(userId, user);
 }
 
+async function getSharedFacts() {
+  const key = 'shared_facts';
+  const empty = { facts: [] };
+  
+  if (useReplitDB) {
+    try {
+      const raw = await db.get(key);
+      const data = unwrap(raw);
+      return data || empty;
+    } catch (err) {
+      return empty;
+    }
+  } else {
+    loadLocal();
+    return localStore[key] || empty;
+  }
+}
+
+async function addSharedFact(fact) {
+  const shared = await getSharedFacts();
+  const normalizedFact = fact.trim().toLowerCase();
+  
+  const exists = shared.facts.some(f => f.text.toLowerCase() === normalizedFact);
+  if (exists) {
+    console.log(`[Memory] Shared fact already exists: "${fact}"`);
+    return false;
+  }
+  
+  shared.facts.push({
+    text: fact.trim(),
+    addedAt: Date.now()
+  });
+  
+  if (shared.facts.length > 50) {
+    shared.facts = shared.facts.slice(-50);
+  }
+  
+  if (useReplitDB) {
+    try {
+      await db.set('shared_facts', shared);
+      console.log(`[Memory] Added shared fact: "${fact}"`);
+    } catch (err) {
+      console.error('[Memory] Shared fact write error:', err.message);
+    }
+  } else {
+    localStore['shared_facts'] = shared;
+    saveLocal();
+    console.log(`[Memory] Added shared fact to file: "${fact}"`);
+  }
+  
+  return true;
+}
+
 module.exports = {
   addFact,
   getFacts,
@@ -232,5 +294,7 @@ module.exports = {
   getGuildConfig,
   setGuildConfig,
   getUserColor,
-  setUserColor
+  setUserColor,
+  getSharedFacts,
+  addSharedFact
 };

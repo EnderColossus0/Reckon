@@ -7,20 +7,25 @@ YOUR MEMORY ABILITIES:
 - You remember everything users tell you about themselves
 - You naturally reference past conversations
 - You recognize returning users and greet them personally
+- You remember shared knowledge that helps all users
 
 HOW TO REMEMBER THINGS:
-When a user tells you something important about themselves (name, job, hobbies, preferences, location, pets, family, etc.), you MUST include [REMEMBER: the fact] somewhere in your response.
+When a user tells you something important about themselves (name, job, hobbies, preferences, location, pets, family, etc.), use [REMEMBER: the fact].
+When you learn something that would be useful for ALL users (like facts, tips, knowledge), use [SHARED_REMEMBER: the fact].
 
-Examples of when to use [REMEMBER:]:
+Examples of [REMEMBER:]:
 - User says "My name is Alex" → Include [REMEMBER: User's name is Alex]
 - User says "I'm a software developer" → Include [REMEMBER: User works as a software developer]
-- User says "I love playing guitar" → Include [REMEMBER: User enjoys playing guitar]
-- User mentions they have a dog named Max → Include [REMEMBER: User has a dog named Max]
+
+Examples of [SHARED_REMEMBER:]:
+- User shares a useful tip → [SHARED_REMEMBER: tip description]
+- User shares interesting knowledge → [SHARED_REMEMBER: knowledge description]
 
 IMPORTANT:
-- Always use [REMEMBER: ...] when you learn something new about the user
+- Use [REMEMBER: ...] for personal user facts only
+- Use [SHARED_REMEMBER: ...] for knowledge that benefits everyone
 - Be friendly and conversational
-- Reference what you already know about them naturally
+- Reference what you know naturally
 - Keep responses helpful and concise`;
 
 const gemini = {
@@ -101,8 +106,18 @@ function extractFacts(text) {
   return facts;
 }
 
+function extractSharedFacts(text) {
+  const facts = [];
+  const regex = /\[SHARED_REMEMBER:\s*(.+?)\]/gi;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    facts.push(match[1].trim());
+  }
+  return facts;
+}
+
 function cleanResponse(text) {
-  return text.replace(/\[REMEMBER:\s*.+?\]/gi, '').trim();
+  return text.replace(/\[REMEMBER:\s*.+?\]/gi, '').replace(/\[SHARED_REMEMBER:\s*.+?\]/gi, '').trim();
 }
 
 module.exports = {
@@ -123,7 +138,7 @@ module.exports = {
     
     const facts = await memory.getFacts(userId);
     const history = await memory.getHistory(userId, 6);
-    const context = memory.buildContext(facts, history);
+    const context = await memory.buildContext(facts, history);
     
     console.log(`[AI] User ${userId} | Model: ${model} | Facts: ${facts.length} | History: ${history.length}`);
     
@@ -156,10 +171,15 @@ module.exports = {
 
     if (success && reply) {
       const newFacts = extractFacts(reply);
-      console.log(`[AI] Extracted ${newFacts.length} facts from response`);
+      const newSharedFacts = extractSharedFacts(reply);
+      console.log(`[AI] Extracted ${newFacts.length} personal facts and ${newSharedFacts.length} shared facts from response`);
       
       for (const fact of newFacts) {
         await memory.addFact(userId, fact);
+      }
+      
+      for (const fact of newSharedFacts) {
+        await memory.addSharedFact(fact);
       }
       
       const cleanReply = cleanResponse(reply);
