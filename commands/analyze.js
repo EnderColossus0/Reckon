@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'analyze', description: 'Analyze an image (upload or URL)' },
@@ -62,38 +63,10 @@ module.exports = {
         }
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const prompt = `Analyze this image and describe what you see in detail. Include: objects, colors, composition, mood, and any text visible.`;
-
       const { buffer, mimeType } = await fetchImageAsBase64(imageUrl);
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              role: 'user',
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: buffer } }
-              ]
-            }]
-          })
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const errorMsg = errorData.error?.message || `API error: ${res.status}`;
-        throw new Error(errorMsg);
-      }
-
-      const data = await res.json();
-      const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not analyze image.';
+      const analysis = await toolHandler.generate(message.author.id, prompt, { buffer, mimeType });
 
       const embed = new EmbedBuilder()
         .setTitle('🖼️ Image Analysis')

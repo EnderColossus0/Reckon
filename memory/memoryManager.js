@@ -43,6 +43,8 @@ async function getUser(userId) {
     facts: [],
     history: [],
     color: '#ffffff',
+    chatModel: 'gemini',
+    toolModel: 'gemini',
     createdAt: Date.now()
   };
 
@@ -62,6 +64,8 @@ async function getUser(userId) {
         facts: Array.isArray(data.facts) ? data.facts : [],
         history: Array.isArray(data.history) ? data.history : [],
         color: data.color || '#ffffff',
+        chatModel: data.chatModel || 'gemini',
+        toolModel: data.toolModel || 'gemini',
         embedTitle: data.embedTitle || null,
         embedFooter: data.embedFooter || null,
         createdAt: data.createdAt || Date.now(),
@@ -309,6 +313,29 @@ async function getAllUserFacts() {
   return allFacts;
 }
 
+async function getToolModel(userId) {
+  const user = await getUser(userId);
+  return user.toolModel || 'gemini';
+}
+
+async function setToolModel(userId, model) {
+  const key = `user_${userId}`;
+  const user = await getUser(userId);
+  user.toolModel = model;
+  
+  if (useReplitDB) {
+    try {
+      await db.set(key, user);
+    } catch (err) {
+      console.error('[Memory] Error setting tool model:', err.message);
+    }
+  } else {
+    loadLocal();
+    localStore[key] = user;
+    saveLocal();
+  }
+}
+
 module.exports = {
   addFact,
   getFacts,
@@ -324,5 +351,7 @@ module.exports = {
   setUserEmbedTitle,
   getUserEmbedFooter,
   setUserEmbedFooter,
-  getAllUserFacts
+  getAllUserFacts,
+  getToolModel,
+  setToolModel
 };

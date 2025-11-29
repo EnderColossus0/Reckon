@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'codegen', description: 'Generate code for a task' },
