@@ -46,9 +46,17 @@ Make it clever and fun to solve!`;
       const data = await res.json();
       const riddleText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate.';
 
+      // Parse out the answer and put it in spoiler format
+      const answerMatch = riddleText.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
+      const answer = answerMatch ? answerMatch[1].trim() : 'Could not extract answer';
+      
+      // Remove ANSWER line from display, add spoiler version at end
+      const displayText = riddleText.replace(/ANSWER:.*?(?:\n|$)/i, '').trim();
+      const riddleWithSpoiler = displayText + `\n\n**Answer:** ||${answer}||`;
+
       const embed = new EmbedBuilder()
         .setTitle('🧩 Riddle')
-        .setDescription(riddleText.slice(0, 3900))
+        .setDescription(riddleWithSpoiler.slice(0, 3900))
         .setColor('#9370DB')
         .setFooter({ text: `Difficulty: ${difficulty}` })
         .setTimestamp();
