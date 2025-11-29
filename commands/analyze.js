@@ -7,8 +7,8 @@ module.exports = {
   async execute(message, args, client) {
     // Check cooldown
     if (hasCooldown(message.author.id, 'analyze')) {
-      const remaining = Math.ceil(getCooldownRemaining(message.author.id, 'analyze') / 1000);
-      return message.reply(`⏳ Please wait ${remaining}s before using this command again.`);
+      const remaining = (getCooldownRemaining(message.author.id, 'analyze') / 1000).toFixed(2);
+      return message.reply(`Wait ${remaining}s.`);
     }
     setCooldown(message.author.id, 'analyze');
 
