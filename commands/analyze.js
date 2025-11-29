@@ -5,17 +5,31 @@ module.exports = {
   data: { name: 'analyze', description: 'Analyze an image URL' },
   async execute(message, args, client) {
     if (!args[0]) {
-      return message.reply('❌ Please provide an image URL. Example: `-analyze https://example.com/image.jpg`');
+      return message.reply('❌ Please provide an image URL. Example: `-analyze https://example.com/image.jpg` (PNG, JPG, GIF, WebP)');
     }
 
-    const imageUrl = args[0];
+    let imageUrl = args[0];
     await message.channel.sendTyping();
 
     try {
+      // Convert Tenor GIF to static image if needed
+      if (imageUrl.includes('tenor.com')) {
+        imageUrl = imageUrl.replace(/\?.+$/, '') + '?fmt=json';
+        const tenorRes = await fetch(imageUrl);
+        const tenorData = await tenorRes.json();
+        if (tenorData.media?.[0]?.gif?.url) {
+          imageUrl = tenorData.media[0].gif.url;
+        } else if (tenorData.media?.[0]?.mediumgif?.url) {
+          imageUrl = tenorData.media[0].mediumgif.url;
+        }
+      }
+
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
 
       const prompt = `Analyze this image and describe what you see in detail. Include: objects, colors, composition, mood, and any text visible.`;
+
+      const { buffer, mimeType } = await fetchImageAsBase64(imageUrl);
 
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -27,14 +41,18 @@ module.exports = {
               role: 'user',
               parts: [
                 { text: prompt },
-                { inline_data: { mime_type: 'image/jpeg', data: await fetchImageAsBase64(imageUrl) } }
+                { inline_data: { mime_type: mimeType, data: buffer } }
               ]
             }]
           })
         }
       );
 
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMsg = errorData.error?.message || `API error: ${res.status}`;
+        throw new Error(errorMsg);
+      }
 
       const data = await res.json();
       const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not analyze image.';
@@ -49,13 +67,31 @@ module.exports = {
       await message.reply({ embeds: [embed] });
     } catch (err) {
       console.error('[Analyze] Error:', err.message);
-      message.reply(`❌ Error: ${err.message}`);
+      message.reply(`❌ Error: ${err.message}\n\n**Supported formats:** PNG, JPG, GIF, WebP\n**Tip:** Use direct image URLs (not web pages)`);
     }
   }
 };
 
 async function fetchImageAsBase64(url) {
   const res = await fetch(url);
+  const contentType = res.headers.get('content-type') || 'image/jpeg';
+  
+  // Validate and map MIME types
+  let mimeType = 'image/jpeg';
+  if (contentType.includes('png')) mimeType = 'image/png';
+  else if (contentType.includes('gif')) mimeType = 'image/gif';
+  else if (contentType.includes('webp')) mimeType = 'image/webp';
+  else if (contentType.includes('jpeg') || contentType.includes('jpg')) mimeType = 'image/jpeg';
+
   const buffer = await res.buffer();
-  return buffer.toString('base64');
+
+  // Check file size (Gemini has limits)
+  if (buffer.length > 20 * 1024 * 1024) {
+    throw new Error('Image file too large (max 20MB)');
+  }
+
+  return {
+    buffer: buffer.toString('base64'),
+    mimeType
+  };
 }
