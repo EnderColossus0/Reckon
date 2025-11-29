@@ -26,7 +26,9 @@ module.exports = {
       .setDescription('List of all available commands.\n**Prefix** — -')
       .setColor('#00FF00');
 
-    for (const [category, commands] of Object.entries(categories)) {
+    const categoryEntries = Object.entries(categories);
+    categoryEntries.forEach((entry, index) => {
+      const [category, commands] = entry;
       const commandList = commands
         .map(cmd => `**${cmd.name}** — ${cmd.desc}`)
         .join('\n');
@@ -36,7 +38,16 @@ module.exports = {
         value: commandList,
         inline: false
       });
-    }
+
+      // Add spacing between categories (but not after the last one)
+      if (index < categoryEntries.length - 1) {
+        embed.addFields({
+          name: '\u200b',
+          value: '\u200b',
+          inline: false
+        });
+      }
+    });
 
     await message.reply({ embeds: [embed] });
   }
