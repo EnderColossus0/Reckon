@@ -62,7 +62,10 @@ async function getUser(userId) {
         facts: Array.isArray(data.facts) ? data.facts : [],
         history: Array.isArray(data.history) ? data.history : [],
         color: data.color || '#ffffff',
-        createdAt: data.createdAt || Date.now()
+        embedTitle: data.embedTitle || null,
+        embedFooter: data.embedFooter || null,
+        createdAt: data.createdAt || Date.now(),
+        ...data
       };
     } catch (err) {
       console.error('[Memory] Read error:', err.message);

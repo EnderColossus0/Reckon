@@ -34,6 +34,6 @@ module.exports = {
       .setColor(userColor || '#ffffff')
       .setFooter({ text: 'Use the commands above to customize your settings' });
 
-    return message.reply({ embeds: [settings] });
+    await message.reply({ embeds: [settings] });
   }
 };
