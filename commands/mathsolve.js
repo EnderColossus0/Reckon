@@ -4,11 +4,25 @@ const fetch = require('node-fetch');
 module.exports = {
   data: { name: 'mathsolve', description: 'Solve math problems' },
   async execute(message, args, client) {
-    if (args.length === 0) {
-      return message.reply('❌ Please provide a math problem. Example: `-mathsolve solve 2x + 5 = 13`');
+    let problem;
+
+    // Check if this is a reply to another message
+    if (message.reference && args.length === 0) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        problem = repliedTo.content;
+      } catch (err) {
+        console.error('[Mathsolve] Error fetching replied message:', err.message);
+      }
     }
 
-    const problem = args.join(' ');
+    if (!problem) {
+      problem = args.join(' ');
+    }
+
+    if (!problem) {
+      return message.reply('❌ Please provide a math problem or reply to a message. Example: `-mathsolve solve 2x + 5 = 13`');
+    }
     await message.channel.sendTyping();
 
     try {

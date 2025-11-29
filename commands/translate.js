@@ -4,12 +4,25 @@ const fetch = require('node-fetch');
 module.exports = {
   data: { name: 'translate', description: 'Translate text to another language' },
   async execute(message, args, client) {
-    if (args.length < 2) {
-      return message.reply('❌ Usage: `-translate [language] [text]`\nExample: `-translate spanish hello world`');
+    let language = args[0];
+    let text;
+
+    // Check if this is a reply to another message
+    if (message.reference && args.length === 1) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        text = repliedTo.content;
+      } catch (err) {
+        console.error('[Translate] Error fetching replied message:', err.message);
+      }
     }
 
-    const language = args[0];
-    const text = args.slice(1).join(' ');
+    if (!text) {
+      if (args.length < 2) {
+        return message.reply('❌ Usage: `-translate [language] [text]` or reply to a message\nExample: `-translate spanish hello world`');
+      }
+      text = args.slice(1).join(' ');
+    }
     await message.channel.sendTyping();
 
     try {

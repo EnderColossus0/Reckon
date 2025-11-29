@@ -4,11 +4,25 @@ const fetch = require('node-fetch');
 module.exports = {
   data: { name: 'sentiment', description: 'Analyze sentiment of text' },
   async execute(message, args, client) {
-    if (args.length === 0) {
-      return message.reply('❌ Please provide text to analyze. Example: `-sentiment I absolutely love this amazing day`');
+    let text;
+
+    // Check if this is a reply to another message
+    if (message.reference && args.length === 0) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        text = repliedTo.content;
+      } catch (err) {
+        console.error('[Sentiment] Error fetching replied message:', err.message);
+      }
     }
 
-    const text = args.join(' ');
+    if (!text) {
+      text = args.join(' ');
+    }
+
+    if (!text) {
+      return message.reply('❌ Please provide text to analyze or reply to a message. Example: `-sentiment I absolutely love this amazing day`');
+    }
     await message.channel.sendTyping();
 
     try {

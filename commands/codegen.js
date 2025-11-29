@@ -4,11 +4,25 @@ const fetch = require('node-fetch');
 module.exports = {
   data: { name: 'codegen', description: 'Generate code for a task' },
   async execute(message, args, client) {
-    if (args.length === 0) {
-      return message.reply('❌ Please describe what code you need. Example: `-codegen fibonacci function in javascript`');
+    let request;
+
+    // Check if this is a reply to another message
+    if (message.reference && args.length === 0) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        request = repliedTo.content;
+      } catch (err) {
+        console.error('[Codegen] Error fetching replied message:', err.message);
+      }
     }
 
-    const request = args.join(' ');
+    if (!request) {
+      request = args.join(' ');
+    }
+
+    if (!request) {
+      return message.reply('❌ Please describe what code you need or reply to a message. Example: `-codegen fibonacci function in javascript`');
+    }
     await message.channel.sendTyping();
 
     try {

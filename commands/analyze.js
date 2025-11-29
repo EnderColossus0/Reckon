@@ -6,17 +6,37 @@ module.exports = {
   async execute(message, args, client) {
     let imageUrl;
 
-    // Check for attached images first
-    if (message.attachments.size > 0) {
+    // Check if this is a reply to another message
+    if (message.reference) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        if (repliedTo.attachments.size > 0) {
+          const attachment = repliedTo.attachments.first();
+          if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+            imageUrl = attachment.url;
+          }
+        }
+        // If no attachments in reply, try to get image URLs from message content
+        if (!imageUrl && repliedTo.content) {
+          const urlMatch = repliedTo.content.match(/https?:\/\/\S+/);
+          if (urlMatch) imageUrl = urlMatch[0];
+        }
+      } catch (err) {
+        console.error('[Analyze] Error fetching replied message:', err.message);
+      }
+    }
+
+    // Check for attached images in current message
+    if (!imageUrl && message.attachments.size > 0) {
       const attachment = message.attachments.first();
       if (!attachment.contentType || !attachment.contentType.startsWith('image/')) {
         return message.reply('❌ Please upload an image file or provide an image URL.');
       }
       imageUrl = attachment.url;
-    } else if (args[0]) {
+    } else if (!imageUrl && args[0]) {
       imageUrl = args[0];
-    } else {
-      return message.reply('❌ Upload an image or provide a URL. Example: `-analyze https://example.com/image.jpg` (PNG, JPG, GIF, WebP)');
+    } else if (!imageUrl) {
+      return message.reply('❌ Upload an image, provide a URL, or reply to a message with images. Example: `-analyze https://example.com/image.jpg` (PNG, JPG, GIF, WebP)');
     }
 
     await message.channel.sendTyping();

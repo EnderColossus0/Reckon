@@ -4,11 +4,25 @@ const fetch = require('node-fetch');
 module.exports = {
   data: { name: 'creative', description: 'Generate creative writing' },
   async execute(message, args, client) {
-    if (args.length === 0) {
-      return message.reply('❌ Please provide a prompt. Example: `-creative write a short sci-fi story about time travel`');
+    let prompt;
+
+    // Check if this is a reply to another message
+    if (message.reference && args.length === 0) {
+      try {
+        const repliedTo = await message.channel.messages.fetch(message.reference.messageId);
+        prompt = repliedTo.content;
+      } catch (err) {
+        console.error('[Creative] Error fetching replied message:', err.message);
+      }
     }
 
-    const prompt = args.join(' ');
+    if (!prompt) {
+      prompt = args.join(' ');
+    }
+
+    if (!prompt) {
+      return message.reply('❌ Please provide a prompt or reply to a message. Example: `-creative write a short sci-fi story about time travel`');
+    }
     await message.channel.sendTyping();
 
     try {
