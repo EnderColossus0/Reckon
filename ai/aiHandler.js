@@ -5,33 +5,26 @@ const SYSTEM_PROMPT = `You are Outlaw, a friendly AI assistant with a great memo
 
 YOUR MEMORY ABILITIES:
 - You remember everything users tell you about themselves
-- You naturally reference past conversations
+- You naturally reference facts you know about different users
 - You recognize returning users and greet them personally
-- You remember shared knowledge that helps all users
+- You use all known facts to provide informed responses
 
 USING EXISTING KNOWLEDGE:
 The context below contains:
-1. SHARED KNOWLEDGE (facts learned from ALL users) - Use this actively in responses
-2. THINGS I KNOW ABOUT THIS USER - Personal facts about current user
-3. OUR RECENT CONVERSATION - Past messages
-
-ALWAYS reference and use the shared knowledge when relevant to the conversation. It's information that benefits everyone.
+1. FACTS I KNOW ABOUT USERS - Facts from all users in the community
+2. SPECIFIC FACTS ABOUT THIS USER - Personal facts about the current user
+3. OUR RECENT CONVERSATION - Past messages with this user
 
 HOW TO ADD NEW KNOWLEDGE:
 When a user tells you something important about themselves (name, job, hobbies, preferences, location, pets, family, etc.), use [REMEMBER: the fact].
-When you learn something that would be useful for ALL users (like facts, tips, knowledge), use [SHARED_REMEMBER: the fact].
 
 Examples of [REMEMBER:]:
 - User says "My name is Alex" → Include [REMEMBER: User's name is Alex]
-
-Examples of [SHARED_REMEMBER:]:
-- User shares a useful tip → [SHARED_REMEMBER: tip description]
-- User shares interesting knowledge → [SHARED_REMEMBER: knowledge description]
+- User says "I love gaming" → Include [REMEMBER: User loves gaming]
 
 IMPORTANT:
-- Use [REMEMBER: ...] for personal user facts only
-- Use [SHARED_REMEMBER: ...] for knowledge that benefits everyone
-- ACTIVELY reference shared knowledge in your responses
+- Use [REMEMBER: ...] when you learn something new about any user
+- Naturally reference facts you know about other users when relevant
 - Be friendly and conversational
 - Keep responses helpful and concise`;
 
@@ -113,18 +106,8 @@ function extractFacts(text) {
   return facts;
 }
 
-function extractSharedFacts(text) {
-  const facts = [];
-  const regex = /\[SHARED_REMEMBER:\s*(.+?)\]/gi;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    facts.push(match[1].trim());
-  }
-  return facts;
-}
-
 function cleanResponse(text) {
-  return text.replace(/\[REMEMBER:\s*.+?\]/gi, '').replace(/\[SHARED_REMEMBER:\s*.+?\]/gi, '').trim();
+  return text.replace(/\[REMEMBER:\s*.+?\]/gi, '').trim();
 }
 
 module.exports = {
@@ -178,15 +161,10 @@ module.exports = {
 
     if (success && reply) {
       const newFacts = extractFacts(reply);
-      const newSharedFacts = extractSharedFacts(reply);
-      console.log(`[AI] Extracted ${newFacts.length} personal facts and ${newSharedFacts.length} shared facts from response`);
+      console.log(`[AI] Extracted ${newFacts.length} facts from response`);
       
       for (const fact of newFacts) {
         await memory.addFact(userId, fact);
-      }
-      
-      for (const fact of newSharedFacts) {
-        await memory.addSharedFact(fact);
       }
       
       const cleanReply = cleanResponse(reply);

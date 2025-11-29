@@ -161,17 +161,16 @@ async function clearUser(userId) {
 async function buildContext(facts, history) {
   let ctx = '';
   
-  const sharedData = await getSharedFacts();
-  const shared = sharedData.facts || [];
+  const allUserFacts = await getAllUserFacts();
 
-  if (shared && shared.length > 0) {
-    ctx += 'SHARED KNOWLEDGE (ABOUT ALL USERS):\n';
-    shared.forEach(f => ctx += `- ${f.text}\n`);
+  if (allUserFacts && allUserFacts.length > 0) {
+    ctx += 'FACTS I KNOW ABOUT USERS (YOU CAN REFERENCE THESE):\n';
+    allUserFacts.forEach(f => ctx += `- ${f.text}\n`);
     ctx += '\n';
   }
   
   if (facts.length > 0) {
-    ctx += 'THINGS I KNOW ABOUT THIS USER:\n';
+    ctx += 'SPECIFIC FACTS ABOUT THIS USER:\n';
     facts.forEach(f => ctx += `- ${f.text}\n`);
     ctx += '\n';
   }
@@ -231,57 +230,37 @@ async function setUserColor(userId, color) {
   await saveUser(userId, user);
 }
 
-async function getSharedFacts() {
-  const key = 'shared_facts';
-  const empty = { facts: [] };
+async function getAllUserFacts() {
+  const allFacts = [];
   
   if (useReplitDB) {
     try {
-      const raw = await db.get(key);
-      const data = unwrap(raw);
-      return data || empty;
+      const keys = await db.list();
+      for (const key of keys) {
+        if (key.startsWith('user_')) {
+          const raw = await db.get(key);
+          const data = unwrap(raw);
+          if (data && Array.isArray(data.facts)) {
+            allFacts.push(...data.facts);
+          }
+        }
+      }
     } catch (err) {
-      return empty;
+      console.error('[Memory] Error getting all facts:', err.message);
     }
   } else {
     loadLocal();
-    return localStore[key] || empty;
-  }
-}
-
-async function addSharedFact(fact) {
-  const shared = await getSharedFacts();
-  const normalizedFact = fact.trim().toLowerCase();
-  
-  const exists = shared.facts.some(f => f.text.toLowerCase() === normalizedFact);
-  if (exists) {
-    console.log(`[Memory] Shared fact already exists: "${fact}"`);
-    return false;
+    Object.keys(localStore).forEach(key => {
+      if (key.startsWith('user_')) {
+        const data = localStore[key];
+        if (data && Array.isArray(data.facts)) {
+          allFacts.push(...data.facts);
+        }
+      }
+    });
   }
   
-  shared.facts.push({
-    text: fact.trim(),
-    addedAt: Date.now()
-  });
-  
-  if (shared.facts.length > 50) {
-    shared.facts = shared.facts.slice(-50);
-  }
-  
-  if (useReplitDB) {
-    try {
-      await db.set('shared_facts', shared);
-      console.log(`[Memory] Added shared fact: "${fact}"`);
-    } catch (err) {
-      console.error('[Memory] Shared fact write error:', err.message);
-    }
-  } else {
-    localStore['shared_facts'] = shared;
-    saveLocal();
-    console.log(`[Memory] Added shared fact to file: "${fact}"`);
-  }
-  
-  return true;
+  return allFacts;
 }
 
 module.exports = {
@@ -295,6 +274,5 @@ module.exports = {
   setGuildConfig,
   getUserColor,
   setUserColor,
-  getSharedFacts,
-  addSharedFact
+  getAllUserFacts
 };
