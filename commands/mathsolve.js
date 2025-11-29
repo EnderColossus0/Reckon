@@ -35,12 +35,13 @@ module.exports = {
 
     try {
       const prompt = `Solve this math problem and show your work:\n\n${problem}\n\nProvide step-by-step solution.`;
-      const solution = await toolHandler.generate(message.author.id, prompt);
+      const { result: solution, model } = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('🧮 Math Solution')
         .setDescription(solution.slice(0, 3900))
         .setColor('#00AA00')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

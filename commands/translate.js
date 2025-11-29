@@ -35,12 +35,13 @@ module.exports = {
 
     try {
       const prompt = `Translate the following text to ${language}:\n\n${text}\n\nProvide only the translation.`;
-      const translation = await toolHandler.generate(message.author.id, prompt);
+      const { result: translation, model } = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle(`🌍 Translation to ${language}`)
         .setDescription(translation.slice(0, 3900))
         .setColor('#FF00FF')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

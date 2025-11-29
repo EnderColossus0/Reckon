@@ -35,12 +35,13 @@ module.exports = {
 
     try {
       const prompt = `Summarize the following text in 2-3 sentences, keeping the key points:\n\n${text}`;
-      const summary = await toolHandler.generate(message.author.id, prompt);
+      const { result: summary, model } = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('📝 Summary')
         .setDescription(summary.slice(0, 3900))
         .setColor('#FF9500')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

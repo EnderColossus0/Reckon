@@ -35,12 +35,13 @@ module.exports = {
 
     try {
       const fullPrompt = `Explain this topic in simple, easy-to-understand terms (like explaining to a 10-year-old):\n\n${topic}\n\nKeep it concise but comprehensive.`;
-      const explanation = await toolHandler.generate(message.author.id, fullPrompt);
+      const { result: explanation, model } = await toolHandler.generate(message.author.id, fullPrompt);
 
       const embed = new EmbedBuilder()
         .setTitle('📚 Explanation')
         .setDescription(explanation.slice(0, 3900))
         .setColor('#87CEEB')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

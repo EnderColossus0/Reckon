@@ -42,12 +42,13 @@ module.exports = {
 
 Text: "${text}"`;
 
-      const analysis = await toolHandler.generate(message.author.id, prompt);
+      const { result: analysis, model } = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💭 Sentiment Analysis')
         .setDescription(analysis.slice(0, 3900))
         .setColor('#FF1493')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

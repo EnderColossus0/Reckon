@@ -36,12 +36,13 @@ module.exports = {
 
     try {
       const prompt = `Generate clean, well-commented code for: ${request}\n\nProvide only the code with brief comments. Include an example usage if applicable.`;
-      const code = await toolHandler.generate(message.author.id, prompt);
+      const { result: code, model } = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💻 Code Generation')
         .setDescription('```' + code.slice(0, 3900) + '```')
         .setColor('#00FF00')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

@@ -66,13 +66,14 @@ module.exports = {
       const prompt = `Analyze this image and describe what you see in detail. Include: objects, colors, composition, mood, and any text visible.`;
       const { buffer, mimeType } = await fetchImageAsBase64(imageUrl);
 
-      const analysis = await toolHandler.generate(message.author.id, prompt, { buffer, mimeType });
+      const { result: analysis, model } = await toolHandler.generate(message.author.id, prompt, { buffer, mimeType });
 
       const embed = new EmbedBuilder()
         .setTitle('🖼️ Image Analysis')
         .setDescription(analysis.slice(0, 3900))
         .setImage(imageUrl)
         .setColor('#00CCFF')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

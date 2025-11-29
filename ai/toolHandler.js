@@ -73,34 +73,38 @@ module.exports = {
     console.log(`[ToolHandler] User ${userId} | Model: ${model}`);
 
     let reply = null;
+    let usedModel = model;
 
     try {
       if (model === 'groq') {
         if (imageData) {
           console.log('[ToolHandler] Groq does not support images, falling back to Gemini');
           reply = await geminiCall(prompt, imageData);
+          usedModel = 'gemini';
         } else {
           reply = await groqCall(prompt);
         }
       } else {
         reply = await geminiCall(prompt, imageData);
       }
-      console.log(`[ToolHandler] ${model} succeeded`);
+      console.log(`[ToolHandler] ${usedModel} succeeded`);
     } catch (err) {
-      console.log(`[ToolHandler] ${model} failed: ${err.message}, trying fallback...`);
+      console.log(`[ToolHandler] ${usedModel} failed: ${err.message}, trying fallback...`);
       try {
         if (model === 'groq') {
           reply = await geminiCall(prompt, imageData);
+          usedModel = 'gemini';
         } else {
           reply = await groqCall(prompt);
+          usedModel = 'groq';
         }
-        console.log('[ToolHandler] Fallback succeeded');
+        console.log(`[ToolHandler] Fallback succeeded with ${usedModel}`);
       } catch (fallbackErr) {
         console.error('[ToolHandler] Both models failed:', fallbackErr.message);
         throw new Error(fallbackErr.message);
       }
     }
 
-    return reply;
+    return { result: reply, model: usedModel };
   }
 };

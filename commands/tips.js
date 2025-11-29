@@ -41,13 +41,13 @@ module.exports = {
 
 Make them specific and useful, not generic.`;
 
-      const tipsText = await toolHandler.generate(message.author.id, fullPrompt);
+      const { result: tipsText, model } = await toolHandler.generate(message.author.id, fullPrompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💡 Tips & Advice')
         .setDescription(tipsText.slice(0, 3900))
         .setColor('#32CD32')
-        .setFooter({ text: `Topic: ${topic}` })
+        .setFooter({ text: `Topic: ${topic} • Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

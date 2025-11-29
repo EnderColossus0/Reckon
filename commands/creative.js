@@ -35,12 +35,13 @@ module.exports = {
 
     try {
       const fullPrompt = `Create creative writing based on this prompt:\n\n${prompt}\n\nMake it engaging and vivid.`;
-      const story = await toolHandler.generate(message.author.id, fullPrompt);
+      const { result: story, model } = await toolHandler.generate(message.author.id, fullPrompt);
 
       const embed = new EmbedBuilder()
         .setTitle('✨ Creative Writing')
         .setDescription(story.slice(0, 3900))
         .setColor('#FFD700')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

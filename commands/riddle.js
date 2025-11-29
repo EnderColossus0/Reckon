@@ -27,7 +27,7 @@ ANSWER: [The answer]
 
 Make it clever and fun to solve!`;
 
-      const riddleText = await toolHandler.generate(message.author.id, fullPrompt);
+      const { result: riddleText, model } = await toolHandler.generate(message.author.id, fullPrompt);
 
       // Parse out the answer and put it in spoiler format
       const answerMatch = riddleText.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
@@ -41,7 +41,7 @@ Make it clever and fun to solve!`;
         .setTitle('🧩 Riddle')
         .setDescription(riddleWithSpoiler.slice(0, 3900))
         .setColor('#9370DB')
-        .setFooter({ text: `Difficulty: ${difficulty}` })
+        .setFooter({ text: `Difficulty: ${difficulty} • Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

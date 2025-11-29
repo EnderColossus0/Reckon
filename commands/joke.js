@@ -18,12 +18,13 @@ module.exports = {
 
     try {
       const fullPrompt = `Tell me a funny ${style} joke. Make it actually funny and clever, not a dad joke (unless that's what they asked for). Keep it to 1-2 paragraphs max.`;
-      const jokeText = await toolHandler.generate(message.author.id, fullPrompt);
+      const { result: jokeText, model } = await toolHandler.generate(message.author.id, fullPrompt);
 
       const embed = new EmbedBuilder()
         .setTitle('😄 Joke')
         .setDescription(jokeText.slice(0, 3900))
         .setColor('#FFB6C1')
+        .setFooter({ text: `Model: ${model}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });
