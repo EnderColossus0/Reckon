@@ -2,13 +2,23 @@ const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 
 module.exports = {
-  data: { name: 'analyze', description: 'Analyze an image URL' },
+  data: { name: 'analyze', description: 'Analyze an image (upload or URL)' },
   async execute(message, args, client) {
-    if (!args[0]) {
-      return message.reply('❌ Please provide an image URL. Example: `-analyze https://example.com/image.jpg` (PNG, JPG, GIF, WebP)');
+    let imageUrl;
+
+    // Check for attached images first
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      if (!attachment.contentType || !attachment.contentType.startsWith('image/')) {
+        return message.reply('❌ Please upload an image file or provide an image URL.');
+      }
+      imageUrl = attachment.url;
+    } else if (args[0]) {
+      imageUrl = args[0];
+    } else {
+      return message.reply('❌ Upload an image or provide a URL. Example: `-analyze https://example.com/image.jpg` (PNG, JPG, GIF, WebP)');
     }
 
-    let imageUrl = args[0];
     await message.channel.sendTyping();
 
     try {
