@@ -107,7 +107,7 @@ function extractFacts(text) {
 }
 
 function cleanResponse(text) {
-  return text.replace(/\[REMEMBER:\s*.+?\]/gi, '').trim();
+  return text.replace(/\[REMEMBER:[\s\S]*?\]/gi, '').trim();
 }
 
 module.exports = {
