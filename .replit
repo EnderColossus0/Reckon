@@ -10,7 +10,7 @@ channel = "stable-24_11"
 
 [deployment]
 run = ["node", "index.js"]
-deploymentTarget = "vm"
+deploymentTarget = "autoscale"
 ignorePorts = false
 
 [agent]
@@ -38,3 +38,7 @@ args = "node index.js"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[ports]]
+localPort = 5000
+externalPort = 80

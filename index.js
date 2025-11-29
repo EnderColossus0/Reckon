@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 const { Client, Collection, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const aiHandler = require('./ai/aiHandler');
 const configStore = require('./memory/configStore');
@@ -101,6 +102,17 @@ client.on('messageCreate', async message => {
   } catch (err) {
     console.error('AI trigger error', err);
   }
+});
+
+// --- Keep-alive HTTP server ---
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'ok', bot: 'Outlaw is running' }));
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`[Server] Keep-alive endpoint listening on port ${PORT}`);
 });
 
 // --- Login ---
