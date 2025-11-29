@@ -10,6 +10,16 @@ module.exports = {
       'AI': [
         { name: 'setaimodel', desc: 'Switch between Gemini or Groq AI.' }
       ],
+      'AI Tools': [
+        { name: 'analyze', desc: 'Analyze an image URL.' },
+        { name: 'codegen', desc: 'Generate code for a task.' },
+        { name: 'summarize', desc: 'Summarize text.' },
+        { name: 'translate', desc: 'Translate text to another language.' },
+        { name: 'sentiment', desc: 'Analyze sentiment of text.' },
+        { name: 'mathsolve', desc: 'Solve math problems with steps.' },
+        { name: 'creative', desc: 'Generate creative writing.' },
+        { name: 'trivia', desc: 'Generate a trivia question.' }
+      ],
       'Customization': [
         { name: 'setcolor', desc: 'Set custom embed color for AI embed responses.' },
         { name: 'settitle', desc: 'Set custom title for AI embed responses.' },
@@ -33,6 +43,7 @@ module.exports = {
     const categoryEmojis = {
       'Configuration': '⚙️',
       'AI': '🤖',
+      'AI Tools': '🔧',
       'Customization': '🎨',
       'Memory & Knowledge': '🧠',
       'Utility': '🛠️'
