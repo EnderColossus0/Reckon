@@ -95,7 +95,7 @@ client.on('messageCreate', async message => {
         .setTitle('Outlaw')
         .setDescription(reply.length > 3900 ? reply.slice(0, 3900) + '…' : reply)
         .setColor(color)
-        .setFooter({ text: `Model: ${modelInfo}` })
+        .setFooter({ text: modelInfo })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });
