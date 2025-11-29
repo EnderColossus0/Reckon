@@ -35,7 +35,8 @@ module.exports = {
       ],
       'Utility': [
         { name: 'ping', desc: 'Check bot latency.' },
-        { name: 'menu', desc: 'Show this help menu.' }
+        { name: 'menu', desc: 'Show this help menu.' },
+        { name: 'help', desc: 'Get detailed help for a specific command.' }
       ]
     };
 
