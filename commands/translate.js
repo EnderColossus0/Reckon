@@ -1,9 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
+const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
 
 module.exports = {
   data: { name: 'translate', description: 'Translate text to another language' },
   async execute(message, args, client) {
+    // Check cooldown
+    if (hasCooldown(message.author.id, 'translate')) {
+      const remaining = Math.ceil(getCooldownRemaining(message.author.id, 'translate') / 1000);
+      return message.reply(`⏳ Please wait ${remaining}s before using this command again.`);
+    }
+    setCooldown(message.author.id, 'translate');
+
     let language = args[0];
     let text;
 

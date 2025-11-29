@@ -1,9 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
+const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
 
 module.exports = {
   data: { name: 'analyze', description: 'Analyze an image (upload or URL)' },
   async execute(message, args, client) {
+    // Check cooldown
+    if (hasCooldown(message.author.id, 'analyze')) {
+      const remaining = Math.ceil(getCooldownRemaining(message.author.id, 'analyze') / 1000);
+      return message.reply(`⏳ Please wait ${remaining}s before using this command again.`);
+    }
+    setCooldown(message.author.id, 'analyze');
+
     let imageUrl;
 
     // Check if this is a reply to another message

@@ -1,9 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
+const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
 
 module.exports = {
   data: { name: 'creative', description: 'Generate creative writing' },
   async execute(message, args, client) {
+    // Check cooldown
+    if (hasCooldown(message.author.id, 'creative')) {
+      const remaining = Math.ceil(getCooldownRemaining(message.author.id, 'creative') / 1000);
+      return message.reply(`⏳ Please wait ${remaining}s before using this command again.`);
+    }
+    setCooldown(message.author.id, 'creative');
+
     let prompt;
 
     // Check if this is a reply to another message
