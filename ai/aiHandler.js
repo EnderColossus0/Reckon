@@ -121,7 +121,7 @@ function cleanResponse(text) {
 
 module.exports = {
   setModel(userId, model) {
-    if (['gemini', 'groq'].includes(model)) {
+    if (['groq', 'gemini'].includes(model)) {
       userModels.set(userId, model);
       return true;
     }
@@ -129,7 +129,7 @@ module.exports = {
   },
 
   getModel(userId) {
-    return userModels.get(userId) || 'gemini';
+    return userModels.get(userId) || 'groq';
   },
 
   getModelInfo(userId) {
