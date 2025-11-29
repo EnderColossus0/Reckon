@@ -89,12 +89,13 @@ client.on('messageCreate', async message => {
 
       const userColor = await aiHandler.getUserColor(userId);
       const color = userColor || '#ffffff';
+      const modelInfo = aiHandler.getModelInfo(userId);
 
       const embed = new EmbedBuilder()
         .setTitle('Outlaw')
         .setDescription(reply.length > 3900 ? reply.slice(0, 3900) + '…' : reply)
         .setColor(color)
-        .setFooter({ text: `Model: ${model}` })
+        .setFooter({ text: `Model: ${modelInfo}` })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

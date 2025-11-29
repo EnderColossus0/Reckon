@@ -123,6 +123,16 @@ module.exports = {
     return userModels.get(userId) || 'gemini';
   },
 
+  getModelInfo(userId) {
+    const model = this.getModel(userId);
+    if (model === 'gemini') {
+      return 'Gemini 2.0 Flash';
+    } else if (model === 'groq') {
+      return 'Llama 3.3 70B Versatile';
+    }
+    return model;
+  },
+
   async chat(userId, message) {
     const model = this.getModel(userId);
     
