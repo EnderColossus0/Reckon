@@ -80,6 +80,15 @@ async function saveUser(userId, data) {
   if (useReplitDB) {
     try {
       await db.set(key, data);
+      
+      // Track user ID in a registry for getAllUserFacts
+      const rawRegistry = await db.get('user_registry');
+      const registry = unwrap(rawRegistry) || { userIds: [] };
+      if (!registry.userIds.includes(userId)) {
+        registry.userIds.push(userId);
+        await db.set('user_registry', registry);
+      }
+      
       console.log(`[Memory] Saved ${userId}: ${data.facts?.length || 0} facts, ${data.history?.length || 0} history`);
     } catch (err) {
       console.error('[Memory] Write error:', err.message);
@@ -235,14 +244,14 @@ async function getAllUserFacts() {
   
   if (useReplitDB) {
     try {
-      const keys = await db.list();
-      for (const key of keys) {
-        if (key.startsWith('user_')) {
-          const raw = await db.get(key);
-          const data = unwrap(raw);
-          if (data && Array.isArray(data.facts)) {
-            allFacts.push(...data.facts);
-          }
+      const rawRegistry = await db.get('user_registry');
+      const registry = unwrap(rawRegistry) || { userIds: [] };
+      
+      for (const userId of registry.userIds) {
+        const raw = await db.get(`user_${userId}`);
+        const data = unwrap(raw);
+        if (data && Array.isArray(data.facts)) {
+          allFacts.push(...data.facts);
         }
       }
     } catch (err) {
