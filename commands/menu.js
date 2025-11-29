@@ -18,6 +18,10 @@ module.exports = {
       ],
       'Memory & Knowledge': [
         { name: 'memory', desc: 'View or clear your personal memory.' }
+      ],
+      'Utility': [
+        { name: 'ping', desc: 'Check bot latency.' },
+        { name: 'menu', desc: 'Show this help menu.' }
       ]
     };
 
@@ -30,7 +34,8 @@ module.exports = {
       'Configuration': '⚙️',
       'AI': '🤖',
       'Customization': '🎨',
-      'Memory & Knowledge': '🧠'
+      'Memory & Knowledge': '🧠',
+      'Utility': '🛠️'
     };
 
     const categoryEntries = Object.entries(categories);
