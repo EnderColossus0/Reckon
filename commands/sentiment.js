@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'sentiment', description: 'Analyze sentiment of text' },
@@ -34,9 +34,6 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const prompt = `Analyze the sentiment of this text. Respond with:
 1. Overall sentiment (Positive/Negative/Neutral)
 2. Confidence level (0-100%)
@@ -45,21 +42,7 @@ module.exports = {
 
 Text: "${text}"`;
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }]
-          })
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-
-      const data = await res.json();
-      const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not analyze.';
+      const analysis = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💭 Sentiment Analysis')

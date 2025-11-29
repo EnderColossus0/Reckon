@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'translate', description: 'Translate text to another language' },
@@ -34,26 +34,8 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const prompt = `Translate the following text to ${language}:\n\n${text}\n\nProvide only the translation.`;
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }]
-          })
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-
-      const data = await res.json();
-      const translation = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not translate.';
+      const translation = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle(`🌍 Translation to ${language}`)

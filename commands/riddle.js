@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'riddle', description: 'Get a riddle to solve' },
@@ -20,9 +20,6 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const fullPrompt = `Create a ${difficulty} riddle. Format it as:
 RIDDLE: [The riddle here]
 HINT: [A helpful hint]
@@ -30,21 +27,7 @@ ANSWER: [The answer]
 
 Make it clever and fun to solve!`;
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: fullPrompt }] }]
-          })
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-
-      const data = await res.json();
-      const riddleText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate.';
+      const riddleText = await toolHandler.generate(message.author.id, fullPrompt);
 
       // Parse out the answer and put it in spoiler format
       const answerMatch = riddleText.match(/ANSWER:\s*(.+?)(?:\n|$)/i);

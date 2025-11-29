@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch');
 const { hasCooldown, getCooldownRemaining, setCooldown } = require('../utils/cooldown');
+const toolHandler = require('../ai/toolHandler');
 
 module.exports = {
   data: { name: 'tips', description: 'Get tips and advice' },
@@ -34,9 +34,6 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const fullPrompt = `Provide 5 practical, actionable tips for ${topic}. Format them as:
 1. [Tip title] - [Brief explanation]
 2. [Tip title] - [Brief explanation]
@@ -44,21 +41,7 @@ module.exports = {
 
 Make them specific and useful, not generic.`;
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: fullPrompt }] }]
-          })
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-
-      const data = await res.json();
-      const tipsText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate.';
+      const tipsText = await toolHandler.generate(message.author.id, fullPrompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💡 Tips & Advice')

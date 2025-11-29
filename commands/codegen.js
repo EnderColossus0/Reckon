@@ -35,26 +35,8 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
-
       const prompt = `Generate clean, well-commented code for: ${request}\n\nProvide only the code with brief comments. Include an example usage if applicable.`;
-
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }]
-          })
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-
-      const data = await res.json();
-      const code = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate code.';
+      const code = await toolHandler.generate(message.author.id, prompt);
 
       const embed = new EmbedBuilder()
         .setTitle('💻 Code Generation')
