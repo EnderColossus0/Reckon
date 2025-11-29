@@ -26,15 +26,23 @@ module.exports = {
       .setDescription('List of all available commands.\n**Prefix** — -')
       .setColor('#00FF00');
 
+    const categoryEmojis = {
+      'Configuration': '⚙️',
+      'AI': '🤖',
+      'Customization': '🎨',
+      'Memory & Knowledge': '🧠'
+    };
+
     const categoryEntries = Object.entries(categories);
     categoryEntries.forEach((entry, index) => {
       const [category, commands] = entry;
+      const emoji = categoryEmojis[category] || '';
       const commandList = commands
         .map(cmd => `**${cmd.name}** — ${cmd.desc}`)
         .join('\n');
       
       embed.addFields({
-        name: category,
+        name: `${emoji} ${category}`,
         value: commandList,
         inline: false
       });
