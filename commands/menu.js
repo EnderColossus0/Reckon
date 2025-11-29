@@ -13,11 +13,15 @@ module.exports = {
       'AI Tools': [
         { name: 'analyze', desc: 'Analyze an image URL.' },
         { name: 'codegen', desc: 'Generate code for a task.' },
-        { name: 'summarize', desc: 'Summarize text.' },
-        { name: 'translate', desc: 'Translate text to another language.' },
-        { name: 'sentiment', desc: 'Analyze sentiment of text.' },
-        { name: 'mathsolve', desc: 'Solve math problems with steps.' },
         { name: 'creative', desc: 'Generate creative writing.' },
+        { name: 'explain', desc: 'Explain something in simple terms.' },
+        { name: 'joke', desc: 'Tell a funny joke.' },
+        { name: 'mathsolve', desc: 'Solve math problems with steps.' },
+        { name: 'riddle', desc: 'Get a riddle to solve.' },
+        { name: 'sentiment', desc: 'Analyze sentiment of text.' },
+        { name: 'summarize', desc: 'Summarize text.' },
+        { name: 'tips', desc: 'Get practical tips and advice.' },
+        { name: 'translate', desc: 'Translate text to another language.' },
         { name: 'trivia', desc: 'Generate a trivia question.' }
       ],
       'Customization': [
