@@ -115,5 +115,14 @@ server.listen(PORT, () => {
   console.log(`[Server] Keep-alive endpoint listening on port ${PORT}`);
 });
 
+// --- Internal keep-alive: Prevent Replit from sleeping ---
+setInterval(() => {
+  http.get(`http://localhost:${PORT}`, (res) => {
+    console.log(`[KeepAlive] Ping successful - ${new Date().toISOString()}`);
+  }).on('error', (err) => {
+    console.error('[KeepAlive] Ping failed:', err.message);
+  });
+}, 5 * 60 * 1000); // Ping every 5 minutes
+
 // --- Login ---
 client.login(process.env.TOKEN);
